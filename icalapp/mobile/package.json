@@ -8,11 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "cap:sync": "bun run build && bunx cap sync ios",
+    "cap:sync": "bun run build && bunx cap sync",
     "ios:open": "bun run cap:sync && bunx cap open ios",
     "android:open": "bun run cap:sync && bunx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
     "@capacitor/core": "^8.1.0",
     "@capacitor/ios": "^8.1.0",
     "react": "^19.2.0",
