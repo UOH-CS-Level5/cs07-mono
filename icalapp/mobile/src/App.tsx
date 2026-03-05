@@ -180,11 +180,9 @@ function App() {
               <label className="line-input">
                 <span>Date</span>
                 <input
-                  type="text"
+                  type="date"
                   value={manualDate}
                   onChange={(eventTarget) => setManualDate(eventTarget.target.value)}
-                  placeholder="DD/MM/YYYY"
-                  inputMode="numeric"
                 />
               </label>
 
@@ -192,22 +190,18 @@ function App() {
                 <label className="line-input compact">
                   <span>Start</span>
                   <input
-                    type="text"
+                    type="time"
                     value={manualStartTime}
                     onChange={(eventTarget) => setManualStartTime(eventTarget.target.value)}
-                    placeholder="HH:MM"
-                    inputMode="numeric"
                   />
                 </label>
 
                 <label className="line-input compact">
                   <span>End</span>
                   <input
-                    type="text"
+                    type="time"
                     value={manualEndTime}
                     onChange={(eventTarget) => setManualEndTime(eventTarget.target.value)}
-                    placeholder="HH:MM"
-                    inputMode="numeric"
                   />
                 </label>
               </div>
