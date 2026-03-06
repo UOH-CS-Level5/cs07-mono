@@ -29,7 +29,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
