@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "backend:dev": "bun --cwd backend run dev",
+    "backend:check": "bun --cwd backend run check",
     "cap:sync": "bun run build && bunx cap sync ios",
     "ios:open": "bun run cap:sync && bunx cap open ios",
     "android:open": "bun run build && bunx cap sync android && bunx cap open android"
@@ -15,6 +17,7 @@
   "dependencies": {
     "@capacitor/core": "^8.1.0",
     "@capacitor/ios": "^8.1.0",
+    "better-auth": "^1.3.12",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
