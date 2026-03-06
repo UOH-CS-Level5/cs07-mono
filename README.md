@@ -1,48 +1,13 @@
-# DDD Timetable
+# CS07 Monorepo
 
-A mobile-first iCal timetable app. Import your university timetable via an iCal link and view or add events on your phone.
+A mobile-first timetable Tamagotchi app. Import your university timetable via an iCal link and view or add events on your phone. Your Tamagotchi will grow and evolve based on your attendance and assignment performance.
 
 ## Structure
 
-- `icalapp/backend/` — REST API (Bun + Elysia + SQLite)
-- `icalapp/mobile/` — Mobile app (React + Vite + Capacitor)
+- `packages/backend/` —  base backend for the app
+- `packages/icalapp/backend/` — iCal prototype REST API (Bun + Elysia + SQLite)
+- `apps/icalapp/mobile/` — iCal prototype mobile app (React + Vite + Capacitor)
 
 ## Quick start
 
-See [docs/alpha/setup.md](docs/alpha/setup.md) for full setup instructions.
-
-### Backend
-
-```sh
-cd icalapp/backend
-cp .env.example .env
-bun install
-bun run dev
-```
-
-### Mobile (web preview)
-
-```sh
-cd icalapp/mobile
-cp .env.example .env
-bun install
-bun run dev
-```
-
-### Mobile (Android)
-
-```sh
-cd icalapp/mobile
-bun run android:open
-```
-
-Then build and run from Android Studio.
-
-### Mobile (iOS)
-
-```sh
-cd icalapp/mobile
-bun run ios:open
-```
-
-Then build and run from Xcode.
+See [docs/beta/setup.md](docs/beta/setup.md) for full setup instructions.
