@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "icalapp/mobile/**"
+      - "apps/icalapp/mobile/**"
       - ".maestro/**"
       - ".github/workflows/android-ui-test.yml"
 
@@ -37,27 +37,27 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('icalapp/mobile/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('apps/icalapp/mobile/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: bun install --frozen-lockfile
 
       - name: Build web app
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: bun run build
 
       - name: Ensure Android project exists
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: |
           if [ ! -d "android/app" ]; then
             bunx cap add android
           fi
 
       - name: Sync Capacitor Android project
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: bunx cap sync android
 
       - name: Build app and run Maestro on Android emulator
@@ -69,7 +69,7 @@ jobs:
           profile: pixel_7
           disable-animations: true
           script: |
-            APP_DIR="$GITHUB_WORKSPACE/icalapp/mobile"
+            APP_DIR="$GITHUB_WORKSPACE/apps/icalapp/mobile"
             cd "$APP_DIR/android"
             ./gradlew --no-daemon assembleDebug
             APK_PATH="$APP_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
