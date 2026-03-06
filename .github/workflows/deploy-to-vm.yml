@@ -3,8 +3,8 @@ name: Deploy backend (self-hosted Windows)
 on:
   push:
     paths:
-      - "icalapp/backend/**"
-      - ".github/workflows/deploy-backend-selfhosted.yml"
+      - "packages/icalapp/backend/**"
+      - ".github/workflows/deploy-to-vm.yml"
   workflow_dispatch:
 
 concurrency:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build image
-        run: docker build -t icalapp-backend:latest ./icalapp/backend
+        run: docker build -t icalapp-backend:latest ./packages/icalapp/backend
 
       - name: Remove existing container
         shell: powershell

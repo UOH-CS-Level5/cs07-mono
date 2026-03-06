@@ -32,18 +32,18 @@ This guide covers getting the DDD Timetable app running on your machine and depl
 
 **macOS/Linux:**
 ```sh
-git clone <repo-url>
+git clone https://github.com/UOH-CS-Level5/group-project-repo-2025-2026-roshan-c.git
 cd group-project-repo-2025-2026-roshan-c
-cd icalapp/backend && bun install
-cd ../mobile && bun install
+cd packages/icalapp/backend && bun install
+cd ../../../apps/icalapp/mobile && bun install
 ```
 
 **Windows (PowerShell):**
 ```powershell
-git clone <repo-url>
+git clone https://github.com/UOH-CS-Level5/group-project-repo-2025-2026-roshan-c.git
 cd group-project-repo-2025-2026-roshan-c
-cd icalapp/backend; bun install
-cd ../mobile; bun install
+cd packages/icalapp/backend; bun install
+cd ../../../apps/icalapp/mobile; bun install
 ```
 
 ---
@@ -51,7 +51,7 @@ cd ../mobile; bun install
 ## 2. Run the backend
 
 ```sh
-cd icalapp/backend
+cd packages/icalapp/backend
 bun run dev
 ```
 
@@ -62,7 +62,7 @@ The backend starts on port 3000. Verify it's working by visiting `http://localho
 ## 3. Deploy to Android
 
 ```sh
-cd icalapp/mobile
+cd apps/icalapp/mobile
 bun run android:open
 ```
 
@@ -82,7 +82,7 @@ The app will be installed and launched on your phone.
 ## 4. Deploy to iOS
 
 ```sh
-cd icalapp/mobile
+cd apps/icalapp/mobile
 bun run ios:open
 ```
 
@@ -94,4 +94,3 @@ This builds the web app, syncs it into the iOS project, and opens Xcode. From th
 4. Click **Run** (the play button).
 
 ---
-

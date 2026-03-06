@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - "icalapp/mobile/**"
-      - ".github/workflows/test-icalapp-ios-maestro.yml"
+      - "apps/icalapp/mobile/**"
+      - ".maestro/**"
+      - ".github/workflows/ios-ui-test.yml"
 
 jobs:
   test-ios-smoke:
@@ -31,22 +32,22 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: bun install --frozen-lockfile
 
       - name: Build web app
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: bun run build
 
       - name: Ensure iOS project exists
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: |
           if [ ! -d "ios/App/App.xcodeproj" ]; then
             bunx cap add ios
           fi
 
       - name: Sync Capacitor iOS project
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: bunx cap sync ios
 
       - name: Select simulator runtime and device
@@ -70,7 +71,7 @@ jobs:
           echo "SIM_ID=$SIM_ID" >> "$GITHUB_ENV"
 
       - name: Build iOS app for simulator
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: |
           xcodebuild \
             -project ios/App/App.xcodeproj \
@@ -82,7 +83,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Install app to booted simulator
-        working-directory: icalapp/mobile
+        working-directory: apps/icalapp/mobile
         run: |
           APP_PATH="ios/DerivedData/Build/Products/Debug-iphonesimulator/App.app"
           if [ ! -d "$APP_PATH" ]; then
@@ -100,7 +101,7 @@ jobs:
         run: maestro --version
 
       - name: Run Maestro iOS smoke flow
-        run: maestro --platform ios test icalapp/mobile/.maestro/smoke-ios.yaml
+        run: maestro --platform ios test .maestro/smoke-ios.yaml
 
       - name: Upload Maestro artifacts
         if: success() || failure()
