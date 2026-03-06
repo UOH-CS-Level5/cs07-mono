@@ -1,0 +1,93 @@
+name: iCalapp Android smoke (Maestro)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "icalapp/mobile/**"
+      - ".maestro/**"
+      - ".github/workflows/android-ui-test.yml"
+
+jobs:
+  test-android-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    env:
+      BUN_INSTALL_CACHE_DIR: ~/.bun/install/cache
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Restore Bun cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('icalapp/mobile/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        working-directory: icalapp/mobile
+        run: bun install --frozen-lockfile
+
+      - name: Build web app
+        working-directory: icalapp/mobile
+        run: bun run build
+
+      - name: Ensure Android project exists
+        working-directory: icalapp/mobile
+        run: |
+          if [ ! -d "android/app" ]; then
+            bunx cap add android
+          fi
+
+      - name: Sync Capacitor Android project
+        working-directory: icalapp/mobile
+        run: bunx cap sync android
+
+      - name: Build app and run Maestro on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          script: |
+            APP_DIR="$GITHUB_WORKSPACE/icalapp/mobile"
+            cd "$APP_DIR/android"
+            ./gradlew --no-daemon assembleDebug
+            APK_PATH="$APP_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
+            if [ ! -f "$APK_PATH" ]; then
+              echo "APK not found at $APK_PATH"
+              exit 1
+            fi
+            adb install -r "$APK_PATH"
+            curl -fsSL "https://get.maestro.mobile.dev" | bash
+            export PATH="$HOME/.maestro/bin:$PATH"
+            maestro --version
+            maestro --platform android test "$GITHUB_WORKSPACE/.maestro/smoke-android.yaml"
+
+      - name: Upload Maestro artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-artifacts-android-smoke
+          path: ~/.maestro
+          if-no-files-found: ignore
