@@ -9,7 +9,7 @@ on:
 
 jobs:
   test-ios-smoke:
-    runs-on: macos-26
+    runs-on: macos-15
     timeout-minutes: 45
     permissions:
       contents: read
@@ -17,7 +17,7 @@ jobs:
     env:
       BUN_INSTALL_CACHE_DIR: ~/.bun/install/cache
       DEVICE_TYPE_ID: com.apple.CoreSimulator.SimDeviceType.iPhone-16
-      RUNTIME_PREFIX: com.apple.CoreSimulator.SimRuntime.iOS-26
+      RUNTIME_PREFIX: com.apple.CoreSimulator.SimRuntime.iOS-18-5
 
     steps:
       - name: Checkout
@@ -64,11 +64,11 @@ jobs:
         working-directory: icalapp/mobile
         run: bunx cap sync ios
 
-      - name: Resolve iOS 26 runtime
+      - name: Resolve iOS 18.5 runtime
         run: |
           RUNTIME_ID=$(xcrun simctl list runtimes available | awk -F ' - ' -v prefix="$RUNTIME_PREFIX" '$2 ~ prefix {print $2; exit}')
           if [ -z "$RUNTIME_ID" ]; then
-            echo "No available iOS 26 simulator runtime found."
+            echo "No available iOS 18.5 simulator runtime found."
             exit 1
           fi
           echo "RUNTIME_ID=$RUNTIME_ID" >> "$GITHUB_ENV"
