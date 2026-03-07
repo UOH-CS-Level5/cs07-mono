@@ -1,6 +1,0 @@
-appId: com.ddd.timetable
----
-- launchApp
-- assertVisible: "Import Timetable"
-- assertVisible: "Import via iCal"
-- assertVisible: "Manual entry"

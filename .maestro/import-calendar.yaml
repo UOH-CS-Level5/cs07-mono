@@ -1,11 +1,10 @@
-appId: com.ddd.timetable
+url: http://127.0.0.1:4173
 ---
 - launchApp
 - assertVisible: "Import Timetable"
 - assertVisible: "Import via iCal"
 - tapOn: "iCal Link"
 - inputText: "https://uoh-cs-level5.github.io/group-project-repo-2025-2026-roshan-c/sample-timetable.ics"
-- hideKeyboard
 - tapOn: "Import timetable"
 - assertVisible: "January 2099"
 - assertVisible: "3 active events across 3 days"
