@@ -1,0 +1,22 @@
+appId: com.ddd.timetable
+---
+- launchApp
+- assertVisible: "Import Timetable"
+- assertVisible: "Import via iCal"
+- tapOn: "iCal Link"
+- inputText: "https://uoh-cs-level5.github.io/group-project-repo-2025-2026-roshan-c/sample-timetable.ics"
+- hideKeyboard
+- tapOn: "Import timetable"
+- assertVisible: "January 2099"
+- assertVisible: "3 active events across 3 days"
+- assertVisible: "Monday 12 January"
+- assertVisible: "Placeholder Systems Lecture"
+- assertVisible: "Invented Networking Lab"
+- assertNotVisible: "Old Event That Should Not Import"
+- tapOn: "TUE"
+- assertVisible: "Tuesday 13 January"
+- assertVisible: "Made-Up Research Seminar"
+- tapOn: "WED"
+- assertVisible: "Wednesday 14 January"
+- assertVisible: "Cancelled Tutorial"
+- assertVisible: "Cancelled"

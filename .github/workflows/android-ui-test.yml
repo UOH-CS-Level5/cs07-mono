@@ -1,15 +1,16 @@
-name: iCalapp Android smoke (Maestro)
+name: iCalapp Android import flow (Maestro)
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "apps/icalapp/mobile/**"
+      - "packages/icalapp/backend/**"
       - ".maestro/**"
       - ".github/workflows/android-ui-test.yml"
 
 jobs:
-  test-android-smoke:
+  test-android-import:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -37,17 +38,39 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('apps/icalapp/mobile/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('apps/icalapp/mobile/bun.lock', 'packages/icalapp/backend/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
+        working-directory: packages/icalapp/backend
+        run: bun install --frozen-lockfile
+
+      - name: Install mobile dependencies
         working-directory: apps/icalapp/mobile
         run: bun install --frozen-lockfile
 
       - name: Build web app
         working-directory: apps/icalapp/mobile
-        run: bun run build
+        run: VITE_API_BASE_URL=http://10.0.2.2:3000 bun run build
+
+      - name: Start iCal backend
+        working-directory: packages/icalapp/backend
+        run: |
+          bun run start > "$RUNNER_TEMP/icalapp-backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/icalapp-backend.pid"
+
+      - name: Wait for backend health
+        run: |
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:3000/api/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat "$RUNNER_TEMP/icalapp-backend.log"
+          exit 1
 
       - name: Ensure Android project exists
         working-directory: apps/icalapp/mobile
@@ -81,12 +104,21 @@ jobs:
             curl -fsSL "https://get.maestro.mobile.dev" | bash
             export PATH="$HOME/.maestro/bin:$PATH"
             maestro --version
-            maestro --platform android test "$GITHUB_WORKSPACE/.maestro/smoke-android.yaml"
+            maestro --platform android test "$GITHUB_WORKSPACE/.maestro/import-calendar.yaml"
 
       - name: Upload Maestro artifacts
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-artifacts-android-smoke
-          path: ~/.maestro
+          name: maestro-artifacts-android-import
+          path: |
+            ~/.maestro
+            ${{ runner.temp }}/icalapp-backend.log
           if-no-files-found: ignore
+
+      - name: Stop iCal backend
+        if: success() || failure()
+        run: |
+          if [ -f "$RUNNER_TEMP/icalapp-backend.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/icalapp-backend.pid")" || true
+          fi

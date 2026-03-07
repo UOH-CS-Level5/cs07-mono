@@ -1,15 +1,16 @@
-name: iCalapp iOS smoke (Maestro)
+name: iCalapp iOS import flow (Maestro)
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "apps/icalapp/mobile/**"
+      - "packages/icalapp/backend/**"
       - ".maestro/**"
       - ".github/workflows/ios-ui-test.yml"
 
 jobs:
-  test-ios-smoke:
+  test-ios-import:
     runs-on: macos-15
     timeout-minutes: 45
     permissions:
@@ -32,12 +33,16 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
+        working-directory: packages/icalapp/backend
+        run: bun install --frozen-lockfile
+
+      - name: Install mobile dependencies
         working-directory: apps/icalapp/mobile
         run: bun install --frozen-lockfile
 
       - name: Build web app
         working-directory: apps/icalapp/mobile
-        run: bun run build
+        run: VITE_API_BASE_URL=http://localhost:3000 bun run build
 
       - name: Ensure iOS project exists
         working-directory: apps/icalapp/mobile
@@ -92,6 +97,24 @@ jobs:
           fi
           xcrun simctl install "$SIM_ID" "$APP_PATH"
 
+      - name: Start iCal backend
+        working-directory: packages/icalapp/backend
+        run: |
+          bun run start > "$RUNNER_TEMP/icalapp-backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/icalapp-backend.pid"
+
+      - name: Wait for backend health
+        run: |
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:3000/api/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat "$RUNNER_TEMP/icalapp-backend.log"
+          exit 1
+
       - name: Install Maestro CLI
         run: |
           curl -fsSL "https://get.maestro.mobile.dev" | bash
@@ -100,16 +123,25 @@ jobs:
       - name: Verify Maestro install
         run: maestro --version
 
-      - name: Run Maestro iOS smoke flow
-        run: maestro --platform ios test .maestro/smoke-ios.yaml
+      - name: Run Maestro iOS import flow
+        run: maestro --platform ios test .maestro/import-calendar.yaml
 
       - name: Upload Maestro artifacts
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: maestro-artifacts-ios-smoke
-          path: ~/.maestro
+          name: maestro-artifacts-ios-import
+          path: |
+            ~/.maestro
+            ${{ runner.temp }}/icalapp-backend.log
           if-no-files-found: ignore
+
+      - name: Stop iCal backend
+        if: success() || failure()
+        run: |
+          if [ -f "$RUNNER_TEMP/icalapp-backend.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/icalapp-backend.pid")" || true
+          fi
 
       - name: Shutdown simulator
         if: success() || failure()
