@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import "./App.css";
 
@@ -26,11 +26,37 @@ type EventApiResponse = {
   message?: string;
 };
 
+type CalendarDay = {
+  key: string;
+  dayNumber: string;
+  weekday: string;
+  month: string;
+  fullLabel: string;
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+const dayNumberFormatter = new Intl.DateTimeFormat("en-GB", { day: "2-digit" });
+const weekdayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short" });
+const monthFormatter = new Intl.DateTimeFormat("en-GB", { month: "short" });
+const dayHeaderFormatter = new Intl.DateTimeFormat("en-GB", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+});
+const monthTitleFormatter = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+  year: "numeric",
+});
+const timeRangeFormatter = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
 
 function App() {
   const [screen, setScreen] = useState<Screen>("import");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedDateKey, setSelectedDateKey] = useState("");
 
   const [icalUrl, setIcalUrl] = useState("");
   const [manualTitle, setManualTitle] = useState("Manual Entry");
@@ -46,6 +72,68 @@ function App() {
     () => events.filter((event) => !event.isCancelled).length,
     [events],
   );
+
+  const sortedEvents = useMemo(
+    () => [...events].sort((left, right) => left.startIso.localeCompare(right.startIso) || left.id - right.id),
+    [events],
+  );
+
+  const calendarDays = useMemo(() => {
+    const uniqueDays = new Map<string, CalendarDay>();
+
+    for (const event of sortedEvents) {
+      const startDate = new Date(event.startIso);
+      const key = getLocalDateKey(startDate);
+
+      if (!uniqueDays.has(key)) {
+        uniqueDays.set(key, {
+          key,
+          dayNumber: dayNumberFormatter.format(startDate),
+          weekday: weekdayFormatter.format(startDate),
+          month: monthFormatter.format(startDate),
+          fullLabel: dayHeaderFormatter.format(startDate),
+        });
+      }
+    }
+
+    return Array.from(uniqueDays.values());
+  }, [sortedEvents]);
+
+  const selectedDay = useMemo(
+    () => calendarDays.find((day) => day.key === selectedDateKey) ?? calendarDays[0] ?? null,
+    [calendarDays, selectedDateKey],
+  );
+
+  const selectedDayEvents = useMemo(() => {
+    if (!selectedDay) {
+      return [];
+    }
+
+    return sortedEvents.filter((event) => getLocalDateKey(new Date(event.startIso)) === selectedDay.key);
+  }, [selectedDay, sortedEvents]);
+
+  const selectedMonthLabel = useMemo(() => {
+    if (!selectedDayEvents[0]) {
+      return "Upcoming schedule";
+    }
+
+    return monthTitleFormatter.format(new Date(selectedDayEvents[0].startIso));
+  }, [selectedDayEvents]);
+
+  useEffect(() => {
+    if (calendarDays.length === 0) {
+      setSelectedDateKey("");
+      return;
+    }
+
+    setSelectedDateKey((currentValue) => {
+      if (calendarDays.some((day) => day.key === currentValue)) {
+        return currentValue;
+      }
+
+      return calendarDays[0].key;
+    });
+  }, [calendarDays]);
 
   const handleIcalSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -216,11 +304,16 @@ function App() {
         </section>
       ) : (
         <section className="phone-screen calendar-screen">
+          <div className="shape shape-top-right calendar-shape-top-right" aria-hidden="true" />
+          <div className="shape shape-bottom-left calendar-shape-bottom-left" aria-hidden="true" />
+
           <header className="calendar-header">
             <div>
-              <p className="calendar-kicker">Imported schedule</p>
-              <h2>Calendar</h2>
-              <p className="calendar-subcopy">{activeCount} active events</p>
+              <p className="calendar-kicker">Upcoming schedule</p>
+              <h2>{selectedMonthLabel}</h2>
+              <p className="calendar-subcopy">
+                {activeCount} active events across {calendarDays.length} days
+              </p>
             </div>
             <button className="calendar-back" type="button" onClick={() => setScreen("import")}>
               Edit import
@@ -231,32 +324,79 @@ function App() {
             {events.length === 0 ? (
               <p className="calendar-empty">No events imported yet.</p>
             ) : (
-              events.map((eventRecord) => (
-                <article
-                  className={`calendar-event ${eventRecord.isCancelled ? "is-cancelled" : ""}`}
-                  key={`${eventRecord.id}-${eventRecord.startIso}`}
-                >
-                  <h3 className="calendar-event-title">
-                    {eventRecord.title}
-                    {eventRecord.isCancelled ? <span className="event-pill">Cancelled</span> : null}
-                  </h3>
+              <>
+                <div className="calendar-day-strip" role="tablist" aria-label="Calendar days">
+                  {calendarDays.map((day) => {
+                    const isSelected = day.key === selectedDay?.key;
 
-                  <div className="calendar-event-meta">
-                    <div className="calendar-meta-item">
-                      <p className="calendar-meta-label">Time</p>
-                      <p className="calendar-meta-value">{eventRecord.timeLabel}</p>
-                    </div>
-                    <div className="calendar-meta-item">
-                      <p className="calendar-meta-label">Date</p>
-                      <p className="calendar-meta-value">{eventRecord.dateLabel}</p>
-                    </div>
-                  </div>
+                    return (
+                      <button
+                        key={day.key}
+                        className={`calendar-day-chip ${isSelected ? "is-selected" : ""}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        onClick={() => setSelectedDateKey(day.key)}
+                      >
+                        <span className="day-chip-weekday">{day.weekday}</span>
+                        <span className="day-chip-number">{day.dayNumber}</span>
+                        <span className="day-chip-month">{day.month}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  {eventRecord.location ? (
-                    <p className="calendar-location">{eventRecord.location}</p>
-                  ) : null}
-                </article>
-              ))
+                <section className="agenda-surface">
+                  <header className="agenda-header">
+                    <div>
+                      <p className="agenda-kicker">Selected day</p>
+                      <h3>{selectedDay?.fullLabel ?? "Upcoming events"}</h3>
+                    </div>
+                    <p className="agenda-count">
+                      {selectedDayEvents.length} {selectedDayEvents.length === 1 ? "event" : "events"}
+                    </p>
+                  </header>
+
+                  {selectedDayEvents.length === 0 ? (
+                    <p className="calendar-empty">No events scheduled for this day.</p>
+                  ) : (
+                    <div className="agenda-list">
+                      {selectedDayEvents.map((eventRecord) => (
+                        <article
+                          className={`agenda-event ${eventRecord.isCancelled ? "is-cancelled" : ""}`}
+                          key={`${eventRecord.id}-${eventRecord.startIso}`}
+                        >
+                          <div className="agenda-time">
+                            <p className="agenda-time-range">
+                              {formatTimeRange(eventRecord.startIso, eventRecord.endIso)}
+                            </p>
+                            <p className="agenda-time-label">
+                              {eventRecord.sourceType === "manual" ? "Manual" : "Imported"}
+                            </p>
+                          </div>
+
+                          <div className="agenda-card">
+                            <div className="agenda-card-top">
+                              <h4 className="agenda-event-title">{eventRecord.title}</h4>
+                              {eventRecord.isCancelled ? (
+                                <span className="event-pill">Cancelled</span>
+                              ) : null}
+                            </div>
+
+                            {eventRecord.location ? (
+                              <p className="agenda-location">{eventRecord.location}</p>
+                            ) : null}
+
+                            {eventRecord.description && eventRecord.description !== "Created manually" ? (
+                              <p className="agenda-description">{eventRecord.description}</p>
+                            ) : null}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              </>
             )}
           </div>
         </section>
@@ -278,4 +418,24 @@ async function getRequestError(response: Response): Promise<string> {
   }
 
   return `Request failed (${response.status}).`;
+}
+
+function getLocalDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatTimeRange(startIso: string, endIso: string): string {
+  const startDate = new Date(startIso);
+  const endDate = new Date(endIso);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "Time unavailable";
+  }
+
+  const startLabel = timeRangeFormatter.format(startDate);
+  const endLabel = timeRangeFormatter.format(endDate);
+  return startLabel === endLabel ? startLabel : `${startLabel} - ${endLabel}`;
 }

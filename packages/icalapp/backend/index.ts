@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS events (
   FOREIGN KEY (import_id) REFERENCES imports(id) ON DELETE SET NULL
 );
 CREATE INDEX IF NOT EXISTS idx_events_start ON events(start_iso);
+CREATE INDEX IF NOT EXISTS idx_events_end ON events(end_iso);
 CREATE INDEX IF NOT EXISTS idx_events_source_type ON events(source_type);
 `);
 
@@ -104,7 +105,7 @@ const insertEvent = db.prepare(`
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
-const selectEvents = db.prepare(`
+const selectUpcomingEvents = db.prepare(`
   SELECT
     id,
     import_id AS importId,
@@ -117,6 +118,7 @@ const selectEvents = db.prepare(`
     description,
     is_cancelled AS isCancelled
   FROM events
+  WHERE end_iso > ?
   ORDER BY start_iso ASC, id ASC
 `);
 
@@ -203,12 +205,13 @@ const app = new Elysia()
       try {
         const icsText = await fetchIcalText(url);
         const parsedEvents = await parseIcalEvents(icsText);
-        const importId = saveImportedEvents(url, parsedEvents);
+        const upcomingEvents = filterUpcomingEvents(parsedEvents);
+        const importId = saveImportedEvents(url, upcomingEvents);
         const events = getAllEvents();
 
         return {
           importId,
-          importedCount: parsedEvents.length,
+          importedCount: upcomingEvents.length,
           count: events.length,
           events,
         };
@@ -259,7 +262,7 @@ console.log(`Backend running at http://${app.server?.hostname}:${app.server?.por
 console.log(`SQLite database: ${databasePath}`);
 
 function getAllEvents(): CalendarEvent[] {
-  const rows = selectEvents.all() as DbEventRow[];
+  const rows = selectUpcomingEvents.all(new Date().toISOString()) as DbEventRow[];
 
   return rows.map((row) => {
     const startDate = new Date(row.startIso);
@@ -413,7 +416,7 @@ async function parseIcalEvents(icsText: string): Promise<ParsedEvent[]> {
       continue;
     }
 
-    const endIso = toIso(value.end) ?? startIso;
+    const endIso = normalizeEventEndIso(startIso, toIso(value.end));
     const title = safeText(value.summary, "Untitled Event");
     const description = safeText(value.description);
     const location = safeText(value.location);
@@ -436,6 +439,19 @@ async function parseIcalEvents(icsText: string): Promise<ParsedEvent[]> {
 
   events.sort((left, right) => left.startIso.localeCompare(right.startIso));
   return events;
+}
+
+function filterUpcomingEvents(events: ParsedEvent[]): ParsedEvent[] {
+  const nowIso = new Date().toISOString();
+  return events.filter((event) => event.endIso > nowIso);
+}
+
+function normalizeEventEndIso(startIso: string, endIso: string | null): string {
+  if (!endIso) {
+    return startIso;
+  }
+
+  return endIso > startIso ? endIso : startIso;
 }
 
 function toIso(value: unknown): string | null {
