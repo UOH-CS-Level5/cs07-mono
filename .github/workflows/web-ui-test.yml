@@ -54,13 +54,23 @@ jobs:
 
       - name: Wait for backend health
         run: |
+          backend_ready=false
+
           for attempt in {1..30}; do
-            if curl -fsS "$API_BASE_URL/api/health" > /dev/null; then
-              exit 0
+            if curl -fsS "$API_BASE_URL/api/health" > /dev/null 2>&1; then
+              backend_ready=true
+              break
             fi
+
             sleep 1
           done
 
+          if [ "$backend_ready" = true ]; then
+            echo "Backend health check passed at $API_BASE_URL/api/health"
+            exit 0
+          fi
+
+          echo "Backend health check failed after 30 attempts"
           cat "$RUNNER_TEMP/icalapp-backend.log"
           exit 1
 
@@ -76,13 +86,23 @@ jobs:
 
       - name: Wait for web preview
         run: |
+          web_ready=false
+
           for attempt in {1..30}; do
-            if curl -fsS "$WEB_BASE_URL" > /dev/null; then
-              exit 0
+            if curl -fsS "$WEB_BASE_URL" > /dev/null 2>&1; then
+              web_ready=true
+              break
             fi
+
             sleep 1
           done
 
+          if [ "$web_ready" = true ]; then
+            echo "Web preview responded at $WEB_BASE_URL"
+            exit 0
+          fi
+
+          echo "Web preview did not respond after 30 attempts"
           cat "$RUNNER_TEMP/icalapp-web.log"
           exit 1
 
@@ -103,10 +123,11 @@ jobs:
         with:
           name: maestro-artifacts-web-import
           path: |
-            ~/.maestro
+            ~/.maestro/tests
             ${{ runner.temp }}/icalapp-backend.log
             ${{ runner.temp }}/icalapp-web.log
           if-no-files-found: ignore
+          include-hidden-files: true
 
       - name: Stop services
         if: success() || failure()
