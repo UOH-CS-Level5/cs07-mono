@@ -34,7 +34,8 @@ type CalendarDay = {
   fullLabel: string;
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 const dayNumberFormatter = new Intl.DateTimeFormat("en-GB", { day: "2-digit" });
 const weekdayFormatter = new Intl.DateTimeFormat("en-GB", { weekday: "short" });
 const monthFormatter = new Intl.DateTimeFormat("en-GB", { month: "short" });
@@ -74,7 +75,11 @@ function App() {
   );
 
   const sortedEvents = useMemo(
-    () => [...events].sort((left, right) => left.startIso.localeCompare(right.startIso) || left.id - right.id),
+    () =>
+      [...events].sort(
+        (left, right) =>
+          left.startIso.localeCompare(right.startIso) || left.id - right.id,
+      ),
     [events],
   );
 
@@ -100,7 +105,10 @@ function App() {
   }, [sortedEvents]);
 
   const selectedDay = useMemo(
-    () => calendarDays.find((day) => day.key === selectedDateKey) ?? calendarDays[0] ?? null,
+    () =>
+      calendarDays.find((day) => day.key === selectedDateKey) ??
+      calendarDays[0] ??
+      null,
     [calendarDays, selectedDateKey],
   );
 
@@ -109,7 +117,9 @@ function App() {
       return [];
     }
 
-    return sortedEvents.filter((event) => getLocalDateKey(new Date(event.startIso)) === selectedDay.key);
+    return sortedEvents.filter(
+      (event) => getLocalDateKey(new Date(event.startIso)) === selectedDay.key,
+    );
   }, [selectedDay, sortedEvents]);
 
   const selectedMonthLabel = useMemo(() => {
@@ -165,7 +175,11 @@ function App() {
       setEvents(payload.events);
       setScreen("calendar");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Could not import iCal link.");
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not import iCal link.",
+      );
     } finally {
       setIsImporting(false);
     }
@@ -175,7 +189,9 @@ function App() {
     event.preventDefault();
 
     if (!manualDate || !manualStartTime || !manualEndTime) {
-      setError("Add date, start time, and end time before submitting manual entry.");
+      setError(
+        "Add date, start time, and end time before submitting manual entry.",
+      );
       return;
     }
 
@@ -205,7 +221,9 @@ function App() {
       setScreen("calendar");
     } catch (requestError) {
       setError(
-        requestError instanceof Error ? requestError.message : "Could not save manual event.",
+        requestError instanceof Error
+          ? requestError.message
+          : "Could not save manual event.",
       );
     } finally {
       setIsSavingManual(false);
@@ -215,7 +233,11 @@ function App() {
   return (
     <main className="app-shell">
       {screen === "import" ? (
-        <section className="phone-screen import-screen" data-name="phone" data-node-id="45:258">
+        <section
+          className="phone-screen import-screen"
+          data-name="phone"
+          data-node-id="45:258"
+        >
           <div className="shape shape-top-right" aria-hidden="true" />
           <div className="shape shape-bottom-left" aria-hidden="true" />
 
@@ -226,8 +248,10 @@ function App() {
               <span />
             </div>
             <p className="hero-kicker">Semester Planner</p>
-            <h1>Import Timetable</h1>
-            <p className="hero-copy">Paste your iCal link or add a manual event.</p>
+            <h1>Import your schedule!</h1>
+            <p className="hero-copy">
+              Paste your iCal link or add a manual event.
+            </p>
           </header>
 
           <section className="surface-panel">
@@ -238,13 +262,19 @@ function App() {
                 <input
                   type="url"
                   value={icalUrl}
-                  onChange={(eventTarget) => setIcalUrl(eventTarget.target.value)}
+                  onChange={(eventTarget) =>
+                    setIcalUrl(eventTarget.target.value)
+                  }
                   placeholder="https://example.com/timetable.ics"
                   autoCapitalize="off"
                   autoCorrect="off"
                 />
               </label>
-              <button className="action-button primary" type="submit" disabled={isImporting}>
+              <button
+                className="action-button primary"
+                type="submit"
+                disabled={isImporting}
+              >
                 {isImporting ? "Importing..." : "Import timetable"}
               </button>
             </form>
@@ -260,7 +290,9 @@ function App() {
                 <input
                   type="text"
                   value={manualTitle}
-                  onChange={(eventTarget) => setManualTitle(eventTarget.target.value)}
+                  onChange={(eventTarget) =>
+                    setManualTitle(eventTarget.target.value)
+                  }
                   placeholder="Seminar"
                 />
               </label>
@@ -270,7 +302,9 @@ function App() {
                 <input
                   type="date"
                   value={manualDate}
-                  onChange={(eventTarget) => setManualDate(eventTarget.target.value)}
+                  onChange={(eventTarget) =>
+                    setManualDate(eventTarget.target.value)
+                  }
                 />
               </label>
 
@@ -280,7 +314,9 @@ function App() {
                   <input
                     type="time"
                     value={manualStartTime}
-                    onChange={(eventTarget) => setManualStartTime(eventTarget.target.value)}
+                    onChange={(eventTarget) =>
+                      setManualStartTime(eventTarget.target.value)
+                    }
                   />
                 </label>
 
@@ -289,12 +325,18 @@ function App() {
                   <input
                     type="time"
                     value={manualEndTime}
-                    onChange={(eventTarget) => setManualEndTime(eventTarget.target.value)}
+                    onChange={(eventTarget) =>
+                      setManualEndTime(eventTarget.target.value)
+                    }
                   />
                 </label>
               </div>
 
-              <button className="action-button secondary" type="submit" disabled={isSavingManual}>
+              <button
+                className="action-button secondary"
+                type="submit"
+                disabled={isSavingManual}
+              >
                 {isSavingManual ? "Saving..." : "Add manual event"}
               </button>
             </form>
@@ -304,8 +346,14 @@ function App() {
         </section>
       ) : (
         <section className="phone-screen calendar-screen">
-          <div className="shape shape-top-right calendar-shape-top-right" aria-hidden="true" />
-          <div className="shape shape-bottom-left calendar-shape-bottom-left" aria-hidden="true" />
+          <div
+            className="shape shape-top-right calendar-shape-top-right"
+            aria-hidden="true"
+          />
+          <div
+            className="shape shape-bottom-left calendar-shape-bottom-left"
+            aria-hidden="true"
+          />
 
           <header className="calendar-header">
             <div>
@@ -315,7 +363,11 @@ function App() {
                 {activeCount} active events across {calendarDays.length} days
               </p>
             </div>
-            <button className="calendar-back" type="button" onClick={() => setScreen("import")}>
+            <button
+              className="calendar-back"
+              type="button"
+              onClick={() => setScreen("import")}
+            >
               Edit import
             </button>
           </header>
@@ -325,7 +377,11 @@ function App() {
               <p className="calendar-empty">No events imported yet.</p>
             ) : (
               <>
-                <div className="calendar-day-strip" role="tablist" aria-label="Calendar days">
+                <div
+                  className="calendar-day-strip"
+                  role="tablist"
+                  aria-label="Calendar days"
+                >
                   {calendarDays.map((day) => {
                     const isSelected = day.key === selectedDay?.key;
 
@@ -353,12 +409,15 @@ function App() {
                       <h3>{selectedDay?.fullLabel ?? "Upcoming events"}</h3>
                     </div>
                     <p className="agenda-count">
-                      {selectedDayEvents.length} {selectedDayEvents.length === 1 ? "event" : "events"}
+                      {selectedDayEvents.length}{" "}
+                      {selectedDayEvents.length === 1 ? "event" : "events"}
                     </p>
                   </header>
 
                   {selectedDayEvents.length === 0 ? (
-                    <p className="calendar-empty">No events scheduled for this day.</p>
+                    <p className="calendar-empty">
+                      No events scheduled for this day.
+                    </p>
                   ) : (
                     <div className="agenda-list">
                       {selectedDayEvents.map((eventRecord) => (
@@ -368,27 +427,39 @@ function App() {
                         >
                           <div className="agenda-time">
                             <p className="agenda-time-range">
-                              {formatTimeRange(eventRecord.startIso, eventRecord.endIso)}
+                              {formatTimeRange(
+                                eventRecord.startIso,
+                                eventRecord.endIso,
+                              )}
                             </p>
                             <p className="agenda-time-label">
-                              {eventRecord.sourceType === "manual" ? "Manual" : "Imported"}
+                              {eventRecord.sourceType === "manual"
+                                ? "Manual"
+                                : "Imported"}
                             </p>
                           </div>
 
                           <div className="agenda-card">
                             <div className="agenda-card-top">
-                              <h4 className="agenda-event-title">{eventRecord.title}</h4>
+                              <h4 className="agenda-event-title">
+                                {eventRecord.title}
+                              </h4>
                               {eventRecord.isCancelled ? (
                                 <span className="event-pill">Cancelled</span>
                               ) : null}
                             </div>
 
                             {eventRecord.location ? (
-                              <p className="agenda-location">{eventRecord.location}</p>
+                              <p className="agenda-location">
+                                {eventRecord.location}
+                              </p>
                             ) : null}
 
-                            {eventRecord.description && eventRecord.description !== "Created manually" ? (
-                              <p className="agenda-description">{eventRecord.description}</p>
+                            {eventRecord.description &&
+                            eventRecord.description !== "Created manually" ? (
+                              <p className="agenda-description">
+                                {eventRecord.description}
+                              </p>
                             ) : null}
                           </div>
                         </article>
