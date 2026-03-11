@@ -10,7 +10,9 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_ICAL_BYTES = 5_000_000;
 
 const dataDirectory = fileURLToPath(new URL("./data", import.meta.url));
-const databasePath = fileURLToPath(new URL("./data/timetable.sqlite", import.meta.url));
+const databasePath = fileURLToPath(
+  new URL("./data/timetable.sqlite", import.meta.url),
+);
 
 mkdirSync(dataDirectory, { recursive: true });
 
@@ -134,30 +136,32 @@ const timeFormatter = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-const saveImportedEvents = db.transaction((url: string, events: ParsedEvent[]) => {
-  const importedAt = new Date().toISOString();
-  const importResult = insertImport.run(url, importedAt);
-  const importId = Number(importResult.lastInsertRowid);
+const saveImportedEvents = db.transaction(
+  (url: string, events: ParsedEvent[]) => {
+    const importedAt = new Date().toISOString();
+    const importResult = insertImport.run(url, importedAt);
+    const importId = Number(importResult.lastInsertRowid);
 
-  deleteIcalEvents.run();
+    deleteIcalEvents.run();
 
-  for (const event of events) {
-    insertEvent.run(
-      importId,
-      "ical",
-      event.uid,
-      event.title,
-      event.startIso,
-      event.endIso,
-      event.location,
-      event.description,
-      event.isCancelled ? 1 : 0,
-      importedAt,
-    );
-  }
+    for (const event of events) {
+      insertEvent.run(
+        importId,
+        "ical",
+        event.uid,
+        event.title,
+        event.startIso,
+        event.endIso,
+        event.location,
+        event.description,
+        event.isCancelled ? 1 : 0,
+        importedAt,
+      );
+    }
 
-  return importId;
-});
+    return importId;
+  },
+);
 
 const saveManualEvent = db.transaction((event: ParsedEvent) => {
   const createdAt = new Date().toISOString();
@@ -219,7 +223,10 @@ const app = new Elysia()
         set.status = 400;
 
         return {
-          message: error instanceof Error ? error.message : "Failed to import iCal file.",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to import iCal file.",
         };
       }
     },
@@ -258,11 +265,15 @@ const app = new Elysia()
   )
   .listen(PORT);
 
-console.log(`Backend running at http://${app.server?.hostname}:${app.server?.port}`);
+console.log(
+  `Backend running at http://${app.server?.hostname}:${app.server?.port}`,
+);
 console.log(`SQLite database: ${databasePath}`);
 
 function getAllEvents(): CalendarEvent[] {
-  const rows = selectUpcomingEvents.all(new Date().toISOString()) as DbEventRow[];
+  const rows = selectUpcomingEvents.all(
+    new Date().toISOString(),
+  ) as DbEventRow[];
 
   return rows.map((row) => {
     const startDate = new Date(row.startIso);
@@ -475,7 +486,9 @@ function safeText(value: unknown, fallback = ""): string {
   return trimmed.length > 0 ? trimmed : fallback;
 }
 
-function parseDateValue(value: string): { year: number; month: number; day: number } | null {
+function parseDateValue(
+  value: string,
+): { year: number; month: number; day: number } | null {
   const trimmed = value.trim();
 
   const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
@@ -507,7 +520,9 @@ function parseDateValue(value: string): { year: number; month: number; day: numb
   return { year, month, day };
 }
 
-function parseTimeValue(value: string): { hours: number; minutes: number } | null {
+function parseTimeValue(
+  value: string,
+): { hours: number; minutes: number } | null {
   const match = /^(\d{2}):(\d{2})$/.exec(value.trim());
   if (!match) {
     return null;
@@ -538,5 +553,9 @@ function isValidDateParts(year: number, month: number, day: number): boolean {
   }
 
   const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 }
