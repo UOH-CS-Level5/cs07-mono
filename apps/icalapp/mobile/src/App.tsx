@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
+import { useWebHaptics } from "web-haptics/react";
 import "./App.css";
 
 type Screen = "import" | "calendar";
@@ -55,6 +56,7 @@ const timeRangeFormatter = new Intl.DateTimeFormat("en-GB", {
 });
 
 function App() {
+  const { trigger } = useWebHaptics();
   const [screen, setScreen] = useState<Screen>("import");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [selectedDateKey, setSelectedDateKey] = useState("");
@@ -68,6 +70,10 @@ function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [isSavingManual, setIsSavingManual] = useState(false);
   const [error, setError] = useState("");
+
+  const triggerHaptic = (pattern: Parameters<typeof trigger>[0]) => {
+    void trigger?.(pattern);
+  };
 
   const activeCount = useMemo(
     () => events.filter((event) => !event.isCancelled).length,
@@ -150,6 +156,7 @@ function App() {
 
     if (!icalUrl.trim()) {
       setError("Paste your iCal link first.");
+      triggerHaptic("error");
       return;
     }
 
@@ -174,12 +181,14 @@ function App() {
       const payload = (await response.json()) as EventApiResponse;
       setEvents(payload.events);
       setScreen("calendar");
+      triggerHaptic("success");
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : "Could not import iCal link.",
       );
+      triggerHaptic("error");
     } finally {
       setIsImporting(false);
     }
@@ -192,6 +201,7 @@ function App() {
       setError(
         "Add date, start time, and end time before submitting manual entry.",
       );
+      triggerHaptic("error");
       return;
     }
 
@@ -219,12 +229,14 @@ function App() {
       const payload = (await response.json()) as EventApiResponse;
       setEvents(payload.events);
       setScreen("calendar");
+      triggerHaptic("success");
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
           : "Could not save manual event.",
       );
+      triggerHaptic("error");
     } finally {
       setIsSavingManual(false);
     }
@@ -366,7 +378,10 @@ function App() {
             <button
               className="calendar-back"
               type="button"
-              onClick={() => setScreen("import")}
+              onClick={() => {
+                triggerHaptic("nudge");
+                setScreen("import");
+              }}
             >
               Edit import
             </button>
@@ -392,7 +407,13 @@ function App() {
                         type="button"
                         role="tab"
                         aria-selected={isSelected}
-                        onClick={() => setSelectedDateKey(day.key)}
+                        onClick={() => {
+                          if (!isSelected) {
+                            triggerHaptic("nudge");
+                          }
+
+                          setSelectedDateKey(day.key);
+                        }}
                       >
                         <span className="day-chip-weekday">{day.weekday}</span>
                         <span className="day-chip-number">{day.dayNumber}</span>
